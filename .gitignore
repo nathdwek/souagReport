@@ -1,0 +1,12 @@
+#latex
+*.aux
+*.out
+*.log
+*.lol
+*.lof
+*.bbl
+*.blg
+*.toc
+
+#kile/kate
+*.backup
