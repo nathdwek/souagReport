@@ -1,0 +1,9 @@
+Ce chapitre couvre la transmission des trames démodulées par le premier microcontrôleur vers le deuxième microcontrôleur. Dans la section suivante, le format des entrées et sorties de ce bloc vont être détaillées.
+
+\section{Première analyse}
+Puisqu'on désire limiter le nombre d'opérations effectuées par le microcontrôleur effectuant le traitement du signal audio, les trames de 10 bits renvoyées par la fonction \ilcode{fskDetector} sont envoyées telles quelles au deuxième microcontrôleur. L'entrée du bloc transmission est donc une trame de 10 bits. L'uart, implémenté en hardware des deux côtés est utilisé pour effectuer la transmission. Celui-ci utilise des trames de 8 ou 9 bits, et il faudra donc 2 trames d'uart pour transmettre une trame de FSK. Le récepteur sera donc logiquement une machine à état séquentielle. Plutôt que de simplement reconstituer la trame de 10 bits originale, on choisit que le récepteur renvoie d'une part les 2 bits de commande et d'autre part les 8 bits d'arguments contenus dans une transmission.
+
+Les parties récepteur et émetteur vont être abordées en parallèle dans la suite, puisqu'elles sont fortement liées. Tout d'abord, la configuration des modules UART est examinée, ensuite, l'émetteur et le récepteur vont être construits.
+
+\section{Configuration des modules UART}
+
