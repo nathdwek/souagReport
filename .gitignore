@@ -10,3 +10,7 @@
 
 #kile/kate
 *.backup
+
+#meld
+*.orig
+
