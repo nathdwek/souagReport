@@ -7,7 +7,15 @@ Les parties récepteur et émetteur vont être abordées en parallèle dans la s
 
 \section{Configuration des modules UART}
 
-\begin{minted}[mathescape]{c}
+Pour que la communication soit possible, les deux UART doivent être en accord sur quatre paramètres: le Baud Rate, la polarité des ports \ilcode{TX} et \ilcode{RX}, le format de trame, et enfin le protocole d'envoi de trame. Ces paramètres sont fixés dans le code source \ref{src:commonUart}, qui est donc commun aux deux microcontrôleurs.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=2mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de initUart*/
 void initUart(void){
     //Config Générale
     U1MODEbits.IREN = 0;//IRDA off.
@@ -16,31 +24,28 @@ void initUart(void){
     U1MODEbits.LPBACK = 0;//0:inter uC. 1: test uC vers lui même.
     U1MODEbits.ABAUD = 0;//Auto Baud off.
     U1MODEbits.BRGH = 1;//16coups de clock par bit envoyé
-    //Plus robuste et de toute façon on a un baudrate ridicule.
+    //Plus robuste (3 samples par bit) et de toute façon on a un petit baudrate.
     U1BRG = BRGVAL;//Fixe le baud rate par la longueur du timer lié
+    //BRGVAL $= \frac{f_{\mu{C}}}{4\times{f_{Baud}}}-1$
     U1MODEbits.PDSEL = 0b01;//8bit data, bit de parité (paire)
     U1MODEbits.STSEL = 0;//1 stop bit.
-
-    //Modes d'interruption:
-    IEC0bits.U1TXIE = 0;//Disable UART TX interrupt
-    //=>Osef des deux lignes suivantes:
-    //U1STAbits.UTXISEL0 = 0;
-    //U1STAbits.UTXISEL1 = 0;//Déclenche une interruption dès qu'il est possible
-                           //d'écrire dans le registre d'envoi
-    U1STAbits.URXISEL = 0b00;//Déclenche une interruption à chaque trame reçue
-    IEC0bits.U1RXIE = 1;//Enable UART RX interrupt
 
     //Polarité
     U1STAbits.UTXINV = 1;
     U1MODEbits.URXINV = 1;//tout actif à l'état haut
 
-    //Pattes
-    TRISBbits.TRISB7 = 1;
-    RPINR18bits.U1RXR = 7;//RP7 est en input et U1RX est branché dessus
-    RPOR3bits.RP6R = 0b00011;//RP6 est lié à U1TX
+    //Routage des ports TX et RX vers les pattes utilisées: propre à chaque $\mu{C}$
 
     //Start uart et ses composants
     U1MODEbits.UARTEN = 1;//Active l'uart 1
     U1STAbits.UTXEN = 1;//UART prend le controle des ports
 }
 \end{minted}
+\caption{Configuration commune aux deux UART\label{src:commonUart}}
+\end{listing}
+
+Le Baud Rate est fixé à \num{9600}. Cette valeur rend la transmission d'une instruction (deux trames) pratiquement instantanée par rapport aux autres constantes de temps en présence ($f_{regul} = \SI{100}{\hertz}$, $f_{symbol} = \SI{10}{\hertz}$), tout en étant suffisamment basse pour permettre d'utiliser l'horloge de l'UART en \emph{16X speed mode}, ce qui diminue la probabilité d'erreur car chaque bit est alors échantillonné trois fois au lieu d'une.
+
+Les trames sont choisies longues de 8 bits avec un bit de parité et terminées par 1 stop bit. Passer à 9 bit de longueur de trame, mais sans bit de parité, ne présente pas d'intérêt puisqu'il faut toujours envoyer deux trames pour transmettre une instruction complète (10 bits). La détection rudimentaire d'erreur fournie par le bit de parité est donc légèrement préférable. La polarité n'a elle aucune importance, du moment qu'elle est identique de part et d'autre d'une ligne TX($\mu C_1$)-RX($\mu C_2$).
+
+Vu les très faibles contraintes sur l'UART, le risque d'erreur et la probabilité que les FIFO de réception et transmission se remplissent est pratiquement nul, on peut donc se contenter du protocole le plus simple avec seulement deux fils RX et TX et pas de \emph{flow control}.
