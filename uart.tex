@@ -6,12 +6,12 @@ Puisqu'on désire limiter le nombre d'opérations effectuées par le microcontr�
 Les parties récepteur et émetteur vont être abordées en parallèle dans la suite, puisqu'elles sont fortement liées. Tout d'abord, la configuration des modules UART est examinée\footnote{La plupart des paramètres doivent forcément être les mêmes des deux côtés de la transmission pour que celle-ci soit possible.}, ensuite, l'émetteur et le récepteur vont être construits.
 
 \section{Configuration des modules UART}
-
-Pour que la communication soit possible, les deux UART doivent être en accord sur quatre paramètres: le Baud Rate, la polarité des ports \ilcode{TX} et \ilcode{RX}, le format de trame, et enfin le protocole d'envoi de trame. Ces paramètres sont fixés dans le code source \ref{src:commonUart}, qui est donc commun aux deux microcontrôleurs.
+\subsection{Paramètres communs}
+Pour que la communication soit possible, les deux UART doivent être en accord sur quatre paramètres: le Baud Rate, la polarité des ports \ilcode{TX} et \ilcode{RX}, le format de trame, et enfin le protocole d'envoi de trame.
 \begin{listing}[htbp]
 \begin{minted}[
 frame=lines,
-framesep=2mm,
+framesep=1mm,
 fontsize=\footnotesize,
 mathescape
 ]{c}
@@ -41,11 +41,299 @@ void initUart(void){
     U1STAbits.UTXEN = 1;//UART prend le controle des ports
 }
 \end{minted}
-\caption{Configuration commune aux deux UART\label{src:commonUart}}
+\caption{Configuration commune aux deux UART.\label{src:commonUart}}
 \end{listing}
+Ces paramètres sont fixés dans le code source \ref{src:commonUart}, qui est donc commun aux deux microcontrôleurs.
 
 Le Baud Rate est fixé à \num{9600}. Cette valeur rend la transmission d'une instruction (deux trames) pratiquement instantanée par rapport aux autres constantes de temps en présence ($f_{regul} = \SI{100}{\hertz}$, $f_{symbol} = \SI{10}{\hertz}$), tout en étant suffisamment basse pour permettre d'utiliser l'horloge de l'UART en \emph{16X speed mode}, ce qui diminue la probabilité d'erreur car chaque bit est alors échantillonné trois fois au lieu d'une.
 
 Les trames sont choisies longues de 8 bits avec un bit de parité et terminées par 1 stop bit. Passer à 9 bit de longueur de trame, mais sans bit de parité, ne présente pas d'intérêt puisqu'il faut toujours envoyer deux trames pour transmettre une instruction complète (10 bits). La détection rudimentaire d'erreur fournie par le bit de parité est donc légèrement préférable. La polarité n'a elle aucune importance, du moment qu'elle est identique de part et d'autre d'une ligne TX($\mu C_1$)-RX($\mu C_2$).
 
-Vu les très faibles contraintes sur l'UART, le risque d'erreur et la probabilité que les FIFO de réception et transmission se remplissent est pratiquement nul, on peut donc se contenter du protocole le plus simple avec seulement deux fils RX et TX et pas de \emph{flow control}.
+Vu les très faibles contraintes sur l'UART, le risque d'erreur et la probabilité que les FIFO de réception et transmission se remplissent est pratiquement nul, on peut donc se contenter du protocole le plus simple avec seulement deux fils RX et TX et pas de \emph{flow control}. Au niveau des pattes, RX est d'une part simplement lié à la patte reprogrammable choisie pour RX dans le registre \ilcode{RPINR18bits.U1RXR} et celle-ci est mise en input, et d'autre part, la patte reprogrammable choisie pour TX est liée à TX dans le registre \ilcode{RPORXbits.RPXR}. Enfin, les branchement croisés RX-TX sont effectués.
+
+\subsection{Choix des modes d'interruption}
+La communication est clairement asymétrique: le microcontrôleur communication transmet les ordres au microcontrôleur propulsion, qui ne répond presque jamais, comme il est expliqué dans la suite. Il est donc logique que les modes d'interruptions soient légèrement différents pour les deux microcontrôleurs.
+
+\subsubsection{Réception}
+Le mode d'interruption pour la réception est tout de même identique pour les deux microcontrôleurs. Une interruption est déclenchée dès qu'une nouvelle trame peut être lue. Ceci est configuré par le code \ref{src:RXInterrupt}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de initUart*/
+void initUart(void){
+    U1STAbits.URXISEL = 0b00;//Déclenche une interruption à chaque trame reçue
+    IEC0bits.U1RXIE = 1;//Enable UART RX interrupt
+}
+
+void _ISR _U1RXInterrupt(void){
+    IFS0bits.U1RXIF = 0;
+    if ((U1STAbits.PERR || U1STAbits.FERR )== 0 ){
+    //Check erreur de parité ou de formatage
+        char received = U1RXREG;
+        handleReceived(received);
+    }else{
+        char garbage = U1RXREG;
+    }
+}
+\end{minted}
+\caption{Configuration de l'interruption RX, commune aux deux UART.\label{src:RXInterrupt}}
+\end{listing}
+
+La routine de réception d'une trame d'UART vérifie simplement qu'il n'y a pas d'erreur de formatage ou de parité puis déclenche le traitement de la trame reçue si elle est correcte, ou la sort simplement de la FIFO si elle est incorrecte. Bien évidemment, la fonction \ilcode{handleReceived} varie entre les deux microcontrôleurs.
+
+\subsubsection{\'Emission}
+Les deux microcontrôleurs envoient finalement assez peu de trames. Pour cette raison, par défaut, une interruption n'est pas déclenchée dès par l'émetteur UART. La différence entre les deux microcontrôleurs réside dans le fait que le microcontrôleur propulsion n'envoie jamais de trames successives mais le microcontrôleur communication bien. Pour ce dernier nous avons choisi d'exploiter une routine d'interruption pour envoyer les trames.
+
+Du côté propulsion, l'interruption d'émission est donc simplement désactivée. La configuration de l'UART communication est un peu plus longue et donnée dans le code \ref{src:TXInterrupt}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de initUart du uC communication*/
+void initUart(void){
+    //Modes d'interruption:
+    IEC0bits.U1TXIE = 0;//Disable UART TX interrupt
+    //Mais elle activée temporairement quand une trame FSK doit être envoyée
+    //Donc il faut config la suite:
+    U1STAbits.UTXISEL0 = 0;
+    U1STAbits.UTXISEL1 = 0;//Déclenche une interruption dès qu'il est possible
+                           //d'écrire dans le registre d'envoi (SI U1TXIE==1)
+}
+\end{minted}
+\caption{Configuration de l'interruption TX de l'uart audio.\label{src:TXInterrupt}}
+\end{listing}
+La routine d'émission contient en réalité la machine d'état de l'émetteur, et est donc présentée dans la section suivante.
+
+\section{Programmation des émetteurs et récepteurs}
+Dans cette section, le format de deux trames d'UART pour représenter une trame de FSK va être présenté, et les récepteurs et émetteurs des deux microcontrôleurs vont être construits à partir de ce format.
+
+\subsection{Division d'une trame de FSK}
+Pour rappel le format des trames à la sortie du démodulateur FSK est donné à la figure \ref{fig:fskDetectorOutput}.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width = 0.3\textwidth]{fskDetectorOutput.png}
+  \caption{Format d'une trame à la sortie de \ilcode{fskDetector}.\label{fig:fskDetectorOutput}}
+\end{figure}
+C'est cette trame qui doit être divisée en deux trames de 8 bits. De plus, le récepteur doit pouvoir faire la différence entre les trames <<première partie>> et les trames <<deuxième partie>>, afin de pouvoir détecter certaines erreurs (partie manquante ou répétition) et pouvoir correctement reconstituer l'instruction reçue. Dans la suite, les les trames <<première partie>> seront notées T1 et les trames <<deuxième partie>> T2.
+
+L'ordre ne peut prendre que les valeurs \ilcode{0b00}, \ilcode{0b10} ou \ilcode{0b01}. On choisit donc que la quatrième possibilité, \ilcode{0b11} constitue les deux premiers bits de T1 afin, de distinguer celle-ci de T2, dont les deux premiers bits sont l'ordre\footnote{Voir la section \ref{subsec:propReceptor} sur le récepteur propulsion pour voir pourquoi l'ordre est envoyé dans la deuxième trame.}. Les 6 bits restants sont répartis entre T1 et T2. Il reste donc deux bits inutilisés dans chaque trame, qu'on met simplement à 0. Tout ceci est résumé dans la figure \ref{fig:fskToUART}.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width = \textwidth]{fskToUART.png}
+  \caption{Division du message en deux trames UART.\label{fig:fskToUART}}
+\end{figure}
+
+A partir de ce format de trame, les émetteurs et récepteurs vont maintenant être construits en suivant l'émission d'une commande et en examinant tous les scénarios possibles.
+
+\subsection{\'Emetteur communication}
+L'entrée du bloc UART dans son entier est la fonction \ilcode{sendCommand(int newCommand)}. Comme des erreurs sont envisageables, le récepteur peut demander que la commande soit répétée. Pour cette raison, \ilcode{newCommand} est stockée de manière persistante avant d'être envoyée. Comme annoncé plus haut, les interruptions d'émissions sont utilisées pour envoyer les deux trames, et l'émetteur est une machine d'état séquentielle.
+
+Lorsqu'une commande doit être envoyée, l'interruption d'émission est activée, et l'état de l'émetteur mis à zéro, ce qui correspond à aucune trame déjà envoyée. Ensuite, dans la routine d'émission, T1 ou T2 est construite selon l'état, puis envoyée, et l'état est incrémenté. Après l'envoi de T2, l'interruption est désactivée jusqu'à ce qu'une nouvelle commande doive être envoyée, et ainsi de suite. Ceci est exécuté par le code \ref{src:commEmitter}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de communication.X/uart.c*/
+int command;
+char senderState;
+
+void sendCommand(int newCommand){
+    command = newCommand
+    IEC0bits.U1TXIE = 1;//Demande  à être interrompu dès qu'une transmission est
+                        //possible
+    senderState = 0;//Etat=0 Il reste tout à envoyer
+    }
+}
+
+void _ISR _U1TXInterrupt(void){
+    //On peut envoyer une partie de commande
+    IFS0bits.U1TXIF = 0;
+
+    //Envoyer la partie 1 ou 2 selon l'état, et switcher l'état
+    if (senderState == 0){
+        char part1 = (command & 0b0000000011110000)/4 + 0b11000000;
+        U1TXREG = part1;
+        senderState = 1;
+    }else{
+        char part2 = (command & 0b0000000000001111)*4
+                 +(command & 0b0000001100000000)/4;
+        U1TXREG = part2;
+        IEC0bits.U1TXIE = 0;
+        //Les deux parties ont été envoyées, plus besoin d'être interrompu
+        //jusqu'à la prochaine commande à envoyer
+    }
+}
+\end{minted}
+\caption{\'Emetteur communication -- machine à état séquentielle.\label{src:commEmitter}}
+\end{listing}
+
+Le récepteur propulsion est calqué sur cet émetteur et est présenté dans la section suivante.
+
+\subsection{Récepteur propulsion\label{subsec:propReceptor}}
+Le récepteur propulsion est donc lui aussi une machine d'état séquentielle à deux états.
+
+A l'état 0, une T1 est attendue. Si c'est bien une T1 qui est reçue, alors l'état passe à 1 et \ilcode{p<7-4>} contenus dans la trame sont stockés. Sinon, il y a eu une erreur, l'état reste à 0 et l'UART propulsion demande que le message soit répété.
+
+A l'état 1, une T2 est attendue. Si une T2 est reçue, alors le message a été entièrement reçu, l'état retourne à zéro et le récepteur renvoie séparément \ilcode{o<1-0>} et \ilcode{p<7-0>} à partir de T2\footnote{On voit donc ici pourquoi il est plus intéressant d'envoyer l'ordre dans T2: cela permet de ne pas devoir le stocker à l'état 0.} et de \ilcode{p<7-4>} en mémoire. Sinon, il y a eu une erreur, l'état retourne quand même à zéro et l'UART propulsion demande que le message entier soit répété. Ceci est exécuté par le code \ref{src:propReceptor}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de propulsion.X/uart.c*/
+char receiverState;
+//0:Attend le début d'une nouvelle commande (0b11----00)
+//1:Attend la fin d'une commande en cours (0b..----00)
+unsigned char param;
+
+/*Déjà présentée plus haut, mais cette fois-ci
+traitement de l'erreur.*/
+void _ISR _U1RXInterrupt(void){
+    IFS0bits.U1RXIF = 0;
+    if ((U1STAbits.PERR || U1STAbits.FERR )== 0 ){
+    //Check erreur de parité ou de formattage
+        char received = U1RXREG;
+        handleReceived(received);
+    }else{
+        char garbage = U1RXREG;
+        //Nouveau:traitement de l'erreur:
+        //état=0 et demande la répétition du message
+        receiverState = askRepeat();
+    }
+}
+
+void handleReceived(char received){
+    if ((received & 0b00000011) == 0b00000000){
+    //Deux derniers bits toujours nuls dans le cas d'une commande correcte.
+        if ((received & 0b11000000) == 0b11000000){
+        //Deux premiers bits sont 0b11 si première partie de commande
+            receiverState = handleParam1(received);
+        }else{
+        //0b00,01,10:Deuxième partie de commande
+            receiverState = handleParam2(received);
+        }
+    }else{
+    //Erreur
+        receiverState = askRepeat();
+    }
+}
+\end{minted}
+\end{listing}
+\clearpage
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+char handleParam1(char received){
+//Le char reçu semble contenir la première partie du paramètre.
+    if (receiverState == 0){
+    //OK ça colle avec l'état du receiver.
+        param = (received & 0b00111100)*4;
+        //Les 4 bits du milieu => Les 4 MSBs du param
+        return 1;
+        //Passe à l'état 1 puisqu'on a reçu la première partie d'une commande.
+    }else{
+    //Erreur, on s'attendait à la fin d'une commande.
+        return askRepeat();
+    }
+}
+
+char handleParam2(char received){
+//Le char reçu semble contenir la deuxième partie du paramètre et la commande.
+    if (receiverState == 0){
+    //Erreur, on a jamais reçu de première partie
+        return askRepeat();
+    }else{
+    //OK, ça colle avec l'état du receiver.
+        param = param + (received & 0b00111100)/4;
+        //Les 4 bits du milieu => Les 4 LSBs du param
+        unsigned char command = (received & 0b11000000)/64;
+        //Les 2 bits du début => les 2 bits de commande
+        interpretCommand(command, param);
+        //Commande traitée.
+        return 0;
+        //Retourne à l'état 0 pour recevoir une nouvelle commande.
+    }
+}
+\end{minted}
+\caption{Récepteur propulsion -- machine à état séquentielle.\label{src:propReceptor}}
+\end{listing}
+D'autres possibilités d'erreurs ont été vu plus haut: mauvaise parité (détecté par l'UART lui-même) ou mauvais formatage (détecté par l'UART ou le récepteur si LSB et LSB+1 d'une trame sont non nuls). Le mécanisme est systématiquement le même: l'état retourne à zéro et la répétition du message est demandée.
+
+La répétition du message est la seule chose que l'UART propulsion émet. L'émetteur propulsion est donc très simple. Il est présenté dans la section suivante.
+
+\subsection{\'Emetteur propulsion}
+L'émetteur propulsion n'envoie que des messages de une trame, et ce relativement rarement. On peut donc se contenter du code \ref{src:propEmitter}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de propulsion.X/uart.c*/
+char askRepeat(){
+//Il y a eu une erreur. Demande de répéter une commande entière et état=>0.
+    if (U1STAbits.UTXBF == 0){
+        U1TXREG = 0b00000001;
+    }else{
+        //Doesn't ever happen
+    }
+    return 0;
+}
+\end{minted}
+\caption{\'Emetteur propulsion.\label{src:propEmitter}}
+\end{listing}
+Une trame \ilcode{0x01} demande donc la répétition du message. Il s'agit donc aussi de la seule trame que le récepteur communication peut doit gérer. Ce récepteur est donc lui aussi très simple. Il est présenté dans la section suivante.
+
+\subsection{Récepteur communication}
+Si l'UART communication reçoit une trame \ilcode{0x01}, il faut donc renvoyer la commande actuelle. Pour cela \ilcode{sendCommand(int newCommand)} est légèrement modifiée. Si \ilcode{newCommand} est \ilcode{0xFFFF} (pas un message valide), alors la commande gardée en mémoire n'est pas écrasée, et l'envoi déclenché ensuite renvoie donc la commande précédente. Ceci est fait dans le code \ref{src:commReceptor}.
+\begin{listing}[htbp]
+\begin{minted}[
+frame=lines,
+framesep=1mm,
+fontsize=\footnotesize,
+mathescape
+]{c}
+/*Extrait de communication.X/uart.c*/
+void _ISR _U1RXInterrupt(void){
+    IFS0bits.U1RXIF = 0;
+    if ((U1STAbits.PERR || U1STAbits.FERR )== 0 ){
+        char received = U1RXREG;
+        handleReceived(received);
+    }else{//askRepeat ici aussi?
+     //On a jamais eu de souci avec l'uart (2 fils sur 5 cm aussi) donc l'error
+     //catching est assez rudimentaire
+    }
+}
+
+//déjà présenté plus haut. Maintenant avec possibilité
+//de renvoyer la commande précédente
+void sendCommand(int newCommand){
+    /*Renvoie la commande en cours si newCommand = 0xFF, sinon remplace la
+     *commande est cours et envoie la nouvelle commande*/
+    if (newCommand != 0xFF){
+        command = newCommand;
+    }
+    //Le reste est inchangé
+    //...
+}
+\end{minted}
+\caption{Récepteur communication.\label{src:commReceptor}}
+\end{listing}
+Le cas où la trame reçue côté communication n'est pas valide n'est pas pris en compte, et ne s'est jamais présenté. Tous les scénarios possibles ont donc été examinés et le code présenté implémente donc une communication UART complète et parfaitement fonctionnelle. Le traitement de l'ordre et du paramètre doit maintenant être abordé. Ce traitement est appelé dans la fonction \ilcode{handleParam2} du code source \ref{src:propReceptor}, et va être présenté dans le chapitre suivant.
