@@ -7,6 +7,7 @@ Les parties récepteur et émetteur vont être abordées en parallèle dans la s
 
 \section{Configuration des modules UART}
 
+\begin{listing}[htbp]
 \begin{minted}[mathescape]{c}
 void initUart(void){
     //Config Générale
@@ -44,3 +45,4 @@ void initUart(void){
     U1STAbits.UTXEN = 1;//UART prend le controle des ports
 }
 \end{minted}
+\end{listing}
