@@ -1,15 +1,21 @@
-\usepackage{fontspec}
 \usepackage{polyglossia}
 \setmainlanguage{french}
 \usepackage{fixltx2e}
 \usepackage{lmodern}
 \usepackage{microtype}
 
+\usepackage{fontspec}
+\setmonofont[
+  AutoFakeSlant,
+  BoldItalicFeatures={FakeSlant},
+]{Inconsolata}
+
 \usepackage{float}
 \usepackage{graphicx}
 \usepackage[hypcap]{caption}
 \usepackage{subcaption}
 \graphicspath{ {pics/} }
+\usepackage[usenames,dvipsnames]{xcolor}
 
 \usepackage{siunitx}
 \sisetup{range-phrase=--}
@@ -26,4 +32,4 @@
 
 \setcounter{tocdepth}{1}
 
-\usepackage[colorlinks=true,linktoc=page,citecolor=blue]{hyperref}
+\usepackage[colorlinks=true, allcolors = NavyBlue, linktoc = all]{hyperref}
