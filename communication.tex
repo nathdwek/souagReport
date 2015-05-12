@@ -1,4 +1,10 @@
-Pour ce projet, notre robot doit être capable de répondre à trois ordres différents : avance tout droit, tourne à droite, tourne à gauche. Le signal audio que nous lui envoyons doit donc contenir cet ordre ainsi qu'une quantité associée, le nombre de centimètres à parcourir ou le nombre de degré qu'il doit tourner. Dans ce chapitre, nous allons développer le chemin que parcourt l'information entre le moment où elle est envoyée sous forme sonore par l'émetteur qui nous a été fourni et la réception par le microcontrôleur.
+Pour ce projet, notre robot doit être capable de répondre à trois ordres différents : avance tout droit, tourne à droite, tourne à gauche. Le signal audio que nous lui envoyons doit donc contenir cet ordre ainsi qu'une quantité associée : le nombre de centimètres à parcourir ou le nombre de degré qu'il doit tourner. Dans ce chapitre, nous allons développer le chemin que parcourt l'information entre le moment où elle est envoyée sous forme sonore par l'émetteur qui nous a été fourni et la réception par le microcontrôleur.
 
 \section{Codage de l'ordre}
+Le message envoyé au robot est codé sur 13 bits. Le premier et le dernier sont tout deux mis dans l'état bas \SI{0}, ils font office de start bit et de stop bit, c'est-à-dire qu'ils délimitent la commande. L'avant dernier bit est un bit de parité, il permet de détecter les cas où la commande est erronée parce qu'elle contient un nombre impair de bits. Les \SI{10} bits restant contiennent l'information utile, les deux premiers donnent l'ordre suivant la convention suivante :
+\begin{itemize}
+\item \ilcode{0b00} : avance tout droit
+\item \ilcode{0b01} : tourne à droite
+\item \ilcode{0b10} : tourne à gauche
+\end{itemize}
 \section{Notre chaîne d'acquisition}
