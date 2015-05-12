@@ -7,4 +7,7 @@ Le message envoyé au robot est codé sur 13 bits. Le premier et le dernier sont
 \item \ilcode{0b01} : tourne à droite
 \item \ilcode{0b10} : tourne à gauche
 \end{itemize}
+Les 8 bits suivants représentent simplement le nombre de degrés ou de centimètres à parcourir. Par exemple, la trame \ilcode{0101111111110} fera tourner notre robot de \SI{255}{\degree} dans le sens anti-horlogique.
+
+Pour ce qui est de mettre en forme le signal audio, une fonction Matlab se charge de générer le signal audio modulé en FSK correspondant à l'information que l'on désire envoyer. Le principe de la modulation FSK est simple : la fréquence du signal correspond soit à l'état haut soit à l'état bas. Dans notre cas, chaque bit de la trame d'information sera émis sur une période de \SI{1}{\milli\second}, un bit 1 sera représenté par une fréquence de \SI{1100}{\hertz} et un bit 0 par une fréquence de \SI{900}{\hertz}. La fréquence porteuse, fréquence du signal quand aucune information n'est transmise vaut quant à elle \SI{1}{\kilo\hertz}
 \section{Notre chaîne d'acquisition}
