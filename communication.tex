@@ -22,4 +22,13 @@ Notre chaîne d'acquisition est constituée de plusieurs étages :
 \end{itemize}
 
 \subsection{Le micro}
-Notre microphone 
+Notre microphone fournit un signal d'une amplitude maximale de \SI{1}{\milli\volt}. Pour le faire fonctionner il a fallu le polariser avec une résistance de \SI{2.2}{\kilo\ohm} suivant le schéma de la figure \ref{fig:polarisation du micro}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{polarisation_micro.pdf}
+\caption{Circuit du microphone}
+\label{fig:polarisation du micro}
+\end{figure}
+Le principe de fonctionnement du micro est que sa membrane extérieure mobile constitue l'armature d'un condensateur chargé en permanence, la deuxième armature étant fixe. Le mouvement de cette membrane, dû aux variations de pression, va modifier la capacité du condensateur, et donc la tension à ses bornes. Le microphone est dit piézoélectrique. Dans notre cas, le microphone est aussi dit "à électret", ce qui signifie qu'il ne nécessite pas d'alimentation pour maintenir le condensateur chargé : le matériau constituant la membrane présente la propriété de conserver une charge électrostatique. Cependant, une alimentation est nécessaire pour polariser le transistor de l'étage de sortie du microphone, au travers de la résistance $R_L$. 
+
