@@ -1,0 +1,10 @@
+Ce chapitre décrit le bloc qui fait le lien entre les instructions reçues par l'UART propulsion et la régulation des moteurs. Dans le chapitre \ref{chap:regul}, nous avons vu que les consignes sont générées sur base de trois variables accessibles par les autre blocs: l'accélération, la distance ou l'angle total à parcourir, et la distance ou l'angle à parcourir avant décélération. La régulation doit aussi savoir si le robot est en train de tourner ou d'avancer tout droit pour simplifier le test d'arrivée. Dans la section suivante, ces variables d'état sont rapidement détaillées, et nous verrons ensuite comme celles-ci sont modifiées par les instructions reçues par l'UART.
+
+\section{Variables d'état externes de la régulation du robot}
+Les variables sont dédoublées pour les mouvement rectilignes et les rotations. Dans la suite, toutes les variables sont citées, mais le rôle ou l'évolution au cours du temps n'est décrit que pour les variables <<rectilignes>> afin de ne pas alourdir cette section.
+
+L'accélération et l'accélération angulaire sont fixées par \ilcode{float acceleration} et \ilcode{float angularAcceleration}. La régulation est déjà responsable, lors de l'exécution d'une commande, de d'abord mettre l'accélération à zéro lorsque la vitesse nominale est atteinte, puis de fixer une décélération lorsque la distance avant décélération est atteinte, et enfin de remettre une dernière fois l'accélération à zéro lorsque la distance totale est atteinte. Le rôle du bloc traité ici se borne donc à fixer une valeur non-nulle lors de la réception d'une commande pour démarrer.
+
+La distance ou l'angle total à parcourir sont fixés par \ilcode{char goalDistance} et \ilcode{float goalTheta}. Seul le bloc couvert dans ce chapitre-ci modifie cette valeur. La distance ou l'angle à parcourir avant décélération sont fixés par \ilcode{char decelerationDistance} et \ilcode{float decelerationTheta}. Seul ce bloc modifie cette valeur, qui est soit une valeur par défaut si la distance totale à parcourir est suffisante, soit un tiers de la distance totale si $\frac{\text{\ilcode{goalDistance}}}{3}<\text{\ilcode{DFLT\_DECELERATION\_DST}}$.
+
+Enfin
