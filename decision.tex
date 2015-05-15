@@ -7,4 +7,8 @@ L'accélération et l'accélération angulaire sont fixées par \ilcode{float ac
 
 La distance ou l'angle total à parcourir sont fixés par \ilcode{char goalDistance} et \ilcode{float goalTheta}. Seul le bloc couvert dans ce chapitre-ci modifie cette valeur. La distance ou l'angle à parcourir avant décélération sont fixés par \ilcode{char decelerationDistance} et \ilcode{float decelerationTheta}. Seul ce bloc modifie cette valeur, qui est soit une valeur par défaut si la distance totale à parcourir est suffisante, soit un tiers de la distance totale si $\frac{\text{\ilcode{goalDistance}}}{3}<\text{\ilcode{DFLT\_DECELERATION\_DST}}$.
 
-Enfin
+Enfin, la commande en cours d'exécution, est définie par \ilcode{char goingStraight}, et char \ilcode{char rotating}. Ces variables sont simplement utilisées pour faciliter les tests d'arrivée, et sont uniquement modifiées par ce bloc-ci.
+
+\section{Interprétation des ordres reçus}
+L'ordre et le paramètres sont interprétés par la fonction \ilcode{interpretCommand(unsigned char order, unsigned char param)}. En fonction de la valeur de \ilcode{order},  
+

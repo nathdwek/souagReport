@@ -19,6 +19,7 @@ Notre chaîne d'acquisition est constituée de plusieurs étages :
 \item Le filtre de garde
 \item Le convertisseur analogique-numérique
 \item Les filtres passe-bande
+\item Les comparateurs
 \end{itemize}
 
 \subsection{Le micro}
@@ -39,7 +40,7 @@ Calculons d'abord la tension à la sortie du premier étage ($V_{out 1}$), à l'
 \begin{figure}
 \centering
 \includegraphics[width=0.7\textwidth]{etage_amplificateur.png}
-\caption{Etage amplificateur}
+\caption{Étage amplificateur}
 \label{fig:etage amplificateur}
 \end{figure}
 \begin{equation}
@@ -66,3 +67,59 @@ V_{out final} = \SI{1.65}{\volt} + 1496 V_{micro}
 Pour être persuadé du bon fonctionnement de notre étage amplificateur, nous avons bien sûr effectué des essais sur celui-ci au départ du générateur de fréquences mis à notre disposition. Les résultats obtenus à l'oscilloscope sont entièrement satisfaisants. 
 
 \subsection{Filtre de garde}
+Étant donné que nous allons numériser notre signal, il est nécessaire d'utiliser un filtre de garde pour éviter tout repliement spectral. Quelques spécifications nous étaient données pour ce filtre :
+\begin{itemize}
+\item Il doit s'agir d'un filtre de Butterworth d'ordre 2
+\item L'atténuation maximale des fréquences utiles doit être de 0.99
+\item L'atténuation minimale des fréquences filtrées doit être de 0.05.
+\end{itemize}
+L'amplitude de la réponse en fréquence d'un filtre de Butterworth est donné par l'équation \ref{eqn:butterworth}
+\begin{equation}
+\vert{H(j\omega)}\vert = \sqrt[]{\frac{1}{1+(\frac{\omega}{\omega_c})^{2n}}}
+\label{eqn:butterworth}
+\end{equation}
+Nous connaissons notre fréquence utile maximale, elle est de \SI{1100}{\hertz}. Si nous injectons cette valeur de $\omega$ dans l'équation, nous pouvons remplacer le terme de gauche par 0.99 et n par 2. On peut alors calculer  l'inconnue restante, $\omega_c$, qui vaut \SI{2972.97}{\hertz}.
+
+Maintenant que nous connaissons la fréquence de coupure de notre filtre, nous pouvons calculer la fréquence à partir de laquelle il faut que l'atténuation soit au minimum de 0.05. On remplace dans l'équation \ref{eqn:butterworth} le module de la réponse en fréquence par 0.05, n par 2 et $\omega_c$ par \SI{2972.97}{\hertz}. On obtient comme valeur de $\omega$ \SI{13.287}{\kilo\hertz}. 
+
+Avec toutes ces informations, nous avons utilisé l'outil "Filter Wizard" d'Analog Devices \footnote{http://www.analog.com/designtools/en/filterwizard} qui nous a permis de designer notre filtre.
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{specs_filtre_analog.pdf}
+\caption{L'interface du "Filter Wizard"}
+\label{fig:specsAnalogFilter}
+\end{figure}
+La figure \ref{fig:specsAnalogFilter} montre les spécifications de notre filtre analogique ainsi que l'amplitude de sa réponse en fréquence en fonction de la fréquence. Pour l'implémentation du filtre, Analog nous conseillait un étage Sallen-Key, ce que nous avons fait.
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\textwidth]{filtre_analogique.png}
+\caption{Montage de notre filtre analogique}
+\label{fig:filtreAnalogique}
+\end{figure}
+La figure \ref{fig:filtreAnalogique} montre le montage de notre filtre passe-bas. Pour tester notre implémentation, nous lui avons mis en entrée des sinus à différentes fréquences : \SI{900}{\hertz}, \SI{1100}{\hertz}, \SI{13}{\kilo\hertz} (première fréquence atténuée avec un facteur 0.05) et à la fréquence de coupure (\SI{2972.97}{\hertz}). Les résultats sont exposés aux figures \ref{fig:filtreAnalog900Hz}, \ref{fig:filtreAnalog1100Hz}, \ref{fig:filtreAnalog13kHz} et \ref{fig:filtreAnalogFc}. L'entrée est représentée en rouge et la sortie en bleu.
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\textwidth]{filtreAnalog900Hz.pdf}
+\caption{\SI{900}{\hertz}}
+\label{fig:filtreAnalog900Hz}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\textwidth]{filtreAnalog1100Hz.pdf}
+\caption{\SI{1100}{\hertz}}
+\label{fig:filtreAnalog1100Hz}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\textwidth]{filtreAnalog13kHz.pdf}
+\caption{\SI{13}{\kilo\hertz}}
+\label{fig:filtreAnalog13kHz}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\textwidth]{filtreAnalogFc.pdf}
+\caption{Fréquence de coupure}
+\label{fig:filtreAnalogFc}
+\end{figure}
+
+\subsection{Le convertisseur analogique-numérique}
