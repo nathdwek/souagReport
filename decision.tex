@@ -10,5 +10,13 @@ La distance ou l'angle total à parcourir sont fixés par \ilcode{char goalDista
 Enfin, la commande en cours d'exécution, est définie par \ilcode{char goingStraight}, et char \ilcode{char rotating}. Ces variables sont simplement utilisées pour faciliter les tests d'arrivée, et sont uniquement modifiées par ce bloc-ci.
 
 \section{Interprétation des ordres reçus}
-L'ordre et le paramètres sont interprétés par la fonction \ilcode{interpretCommand(unsigned char order, unsigned char param)}. En fonction de la valeur de \ilcode{order},  
+L'ordre et le paramètres sont interprétés par la fonction \ilcode{interpretCommand(unsigned char order, unsigned char param)}. En fonction de la valeur de \ilcode{order}, \ilcode{param} est soit interprété comme signé, soit comme non-signé et le signe est ensuite affecté selon que l'ordre soit \ilcode{0b10} ou \ilcode{0b01}. Ensuite les valeurs des autres variables listées plus haut sont déterminées. Ce bloc est aussi responsable de fixer la valeur des $k_p$ de la régulation de distance et de rotation. Ces valeurs dépendent simplement de l'ordre en cours d'exécution\footnote{Selon que le robot soit en train d'aller tout droit ou d'effectuer une rotation un des deux $k_p$ sert essentiellement au suivi de consigne tandis que l'autre sert à la réjection de perturbation.} et ont été déterminées expérimentalement.
+
+\ilcode{decision.h} fournit aussi \ilcode{void resetStateVariables()} qui permet de remettre le robot dans un état inactif, et le wrapper \ilcode{void stop()} qui appelle les fonctions de reset des différents blocs du robot afin d'obtenir un arrêt immédiat et de garantir que l'état du robot soit connu et acceptable avant d'exécuter une nouvelle commande. Ceci permet également d'obtenir un arrêt instantané du robot en envoyant une nouvelle consigne avance, 0.
+
+\section{Validation du bloc transmission-interprétation}
+
+Le fonctionnement complet du robot à partir de la démodulation FSK non incluse est vérifié en envoyant des commandes connues depuis le microcontrôleur communication et en vérifiant que celles-ci sont bien accomplies par le robot. Pour faire apparaître les erreurs et pour mesurer leurs fréquence, nous utilisons, comme à la section \ref{sec:validUart}, un timer 32 bits pour répéter un grand nombre de fois différentes commandes.
+
+Nous n'avons jamais observé d'erreur dans la transmission d'une trame complète: le robot effectue toujours la bonne commande. Comme vu au chapitre \ref{chap:regul} sur la régulation, la précision de cette dernière n'est cependant pas meilleure que \SIrange{5}{7}{\centi\meter}, et une commande trop petite peut mener le robot à ne pas bouger. Le debugger confirme alors bien que l'ordre a été reçu mais qu'il n'est pas suffisant pour que l'erreur maximale suffise à ébranler le robot.
 

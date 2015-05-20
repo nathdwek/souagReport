@@ -15,3 +15,7 @@
 #meld
 *.orig
 
+#emacs
+*~
+\#*\#
+auto/
