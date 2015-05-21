@@ -33,16 +33,14 @@ Dans les deux section suivantes, nous allons donc passer en revue le dimensionne
 
 \section{Dimensionnement de la chaîne d'acquisition}
 
-\subsection{Le micro}
+\subsection{Montage du microphone}
 Notre microphone fournit un signal d'une amplitude maximale de \SI{1}{\milli\volt}. Il doit être polarisé par une résistance de \SI{2.2}{\kilo\ohm} suivant le schéma de la figure \ref{fig:polarisation du micro}.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.7\textwidth]{polarisation_micro.pdf}
-\caption{Circuit du microphone}
+\caption{Circuit d'utilisation du microphone}
 \label{fig:polarisation du micro}
 \end{figure}
-
-Le principe de fonctionnement du micro est que sa membrane extérieure mobile constitue l'armature d'un condensateur chargé en permanence, la deuxième armature étant fixe. Le mouvement de cette membrane, dû aux variations de pression, va modifier la capacité du condensateur, et donc la tension à ses bornes. Le microphone est dit piézoélectrique. Dans notre cas, le microphone est aussi dit "à électret", ce qui signifie qu'il ne nécessite pas d'alimentation pour maintenir le condensateur chargé : le matériau constituant la membrane présente la propriété de conserver une charge électrostatique. Cependant, une alimentation est nécessaire pour polariser le transistor de l'étage de sortie du microphone, au travers de la résistance $R_L$.
 
 \subsection{Montage amplificateur}
 Comme nous l'avons dit précédemment, le signal en sortie de notre micro a une amplitude maximale de \SI{1}{\milli\volt}. Le première priorité est donc de l'amplifier afin de préserver le plus possible le SNR pour la suite du traitement.
@@ -52,7 +50,7 @@ La plage de tension d'entrée de l'ADC va de \SI{0}{\volt} à \SI{3.3}{\volt}, a
 Calculons d'abord la tension à la sortie du premier étage ($V_{out 1}$), à l'aide du principe de superposition. On considère d'abord la seule source de tension continue, la capacité est alors un circuit ouvert (\ref{eqn:2.1}):
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{etage_amplificateur.png}
+\includegraphics[width=\textwidth]{etage_amplificateur.png}
 \caption{Étage amplificateur}
 \label{fig:etage amplificateur}
 \end{figure}
@@ -99,15 +97,15 @@ Maintenant que nous connaissons la fréquence de coupure de notre filtre, nous p
 Avec toutes ces informations, nous avons utilisé l'outil "Filter Wizard" d'Analog Devices \footnote{\url{http://www.analog.com/designtools/en/filterwizard}} qui nous a permis de designer notre filtre.
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{specs_filtre_analog.pdf}
+\includegraphics[width=0.7\textwidth]{specs_filtre_analog.pdf}
 \caption{L'interface du "Filter Wizard"}
 \label{fig:specsAnalogFilter}
 \end{figure}
 La figure \ref{fig:specsAnalogFilter} montre les spécifications de notre filtre analogique ainsi que l'amplitude de sa réponse en fréquence en fonction de la fréquence. Pour l'implémentation du filtre, Analog nous conseillait un étage Sallen-Key, ce que nous avons fait.
 \begin{figure}[htbp]
 \centering
-\includegraphics[width = 0.7\textwidth]{filtre_analogique.png}
-\caption{Montage de notre filtre analogique}
+\includegraphics[width = 0.8\textwidth]{filtre_analogique.png}
+\caption{Filtre de garde Sallen-Key}
 \label{fig:filtreAnalogique}
 \end{figure}
 La figure \ref{fig:filtreAnalogique} montre le montage de notre filtre passe-bas. Pour tester notre implémentation, nous lui avons mis en entrée des sinus à différentes fréquences\footnote{Nous avons d'abord essayé de faire une FFT de la réponse impulsionnelle à l'aide de générateur de PWM et de l'oscilloscope, mais cela n'a pas été concluant car la résolution fréquentielle de l'oscilloscope est trop mauvaise et aussi probablement parce que le pulse le plus étroit que peut fournir le générateur est encore trop large.}: \SI{900}{\hertz}, \SI{1100}{\hertz}, \SI{13}{\kilo\hertz} (première fréquence atténuée avec un facteur 0.05) et à la fréquence de coupure (\SI{2972.97}{\hertz}). Les résultats sont exposés aux figures \ref{fig:filtreAnalog900Hz}, \ref{fig:filtreAnalog1100Hz}, \ref{fig:filtreAnalog13kHz} et \ref{fig:filtreAnalogFc}. L'entrée est représentée en rouge et la sortie en bleu.

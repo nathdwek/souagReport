@@ -16,17 +16,20 @@
 \pagenumbering{arabic}
 \input{intro.tex}
 
-\chapter{Réception et traitement du signal audio FSK}
-\input{communication.tex}
-
 \chapter{Régulation\label{chap:regul}}
 \input{regulation.tex}
 
-\chapter{Transmission des ordres entre les deux microcontrôleurs}
+\chapter{Réception et traitement du signal audio FSK\label{chap:audio}}
+\input{communication.tex}
+
+\chapter{Transmission des ordres entre les deux microcontrôleurs\label{chap:uart}}
 \input{uart.tex}
 
-\chapter{Interprétation des ordres}
+\chapter{Interprétation des ordres\label{chap:decision}}
 \input{decision.tex}
+
+\chapter{Conclusion\label{chap:conclusion}}
+%\input{conclusion.tex}
 
 \listoffigures
 \setcounter{page}{1}
