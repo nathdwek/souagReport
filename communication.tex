@@ -1,15 +1,15 @@
 Pour ce projet, le robot doit être capable de répondre à trois ordres différents: déplacement en ligne droite et rotation dans les deux sens. Le signal audio qui est envoyé doit donc contenir cet ordre ainsi qu'un paramètre: le nombre (signé) de centimètres à parcourir ou l'angle de rotation en degré. Dans ce chapitre, nous allons développer le chemin que parcourt l'information entre le moment où elle est envoyée sous forme sonore par l'émetteur qui nous a été fourni et la réception par le microcontrôleur.
 
 \section{Codage de l'ordre}
-Le message envoyé au robot est codé sur 13 bits. Le premier et le dernier sont des \ilcode{0}et sont respectivement le start bit et le stop bit: il permette de détecter le début et la fin d'une trame. Le bit 11 est un bit de parité pour la détection d'erreur. Les \SI{10} bits restant contiennent l'information utile, les deux premiers donnent l'ordre suivant la convention suivante :
+Le message envoyé au robot est codé sur 13 bits. Le premier et le dernier sont des \ilcode{0} et sont respectivement le start bit et le stop bit: ils permettent de détecter le début et la fin d'une trame. Le bit 11 est un bit de parité pour la détection d'erreur. Les \SI{10} bits restant contiennent l'information utile, les deux premiers donnent l'ordre suivant la convention suivante:
 \begin{itemize}
-\item \ilcode{0b00} : avance tout droit
-\item \ilcode{0b01} : tourne à droite
-\item \ilcode{0b10} : tourne à gauche
+\item \ilcode{0b00}: avance tout droit
+\item \ilcode{0b01}: tourne à droite
+\item \ilcode{0b10}: tourne à gauche
 \end{itemize}
 Les 8 bits suivants représentent simplement le nombre de degrés ou de centimètres à parcourir.
 
-L'information est modulée en FSK, et le signal audio est généré par un script Matlab ou python fourni. Les paramètres importants pour dimensionnement de la chaîne d'acquisition et la démodulation sont repris ci-dessous:
+L'information est modulée en FSK, et le signal audio est généré par un script Matlab ou python fourni. Les paramètres importants pour le dimensionnement de la chaîne d'acquisition et la démodulation sont repris ci-dessous:
 \begin{align*}
 f_{sym} &= \SI{10}{\hertz} \;(\tau_{sym} = \SI{100}{\milli\second})\\
 f_{HI} &= \SI{1100}{\hertz}\\
@@ -23,7 +23,7 @@ La chaîne d'acquisition est constituée des différents étages suivants:
 \item Le filtre de garde
 \item Le convertisseur analogique-numérique
 \end{itemize}
-Le signal doit ensuite est ensuite démodulé à l'aide des éléments suivants:
+Le signal doit être ensuite démodulé à l'aide des éléments suivants:
 \begin{itemize}
 \item Les filtres passe-bande
 \item Les comparateurs
@@ -58,18 +58,18 @@ Calculons d'abord la tension à la sortie du premier étage ($V_{out 1}$), à l'
 V_{+} = V_{-} = V_{out 1} = \SI{1.65}{\volt}
 \label{eqn:2.1}
 \end{equation}
-Considérons ensuite uniquement la source de tension continue, le circuit est alors un inverseur classique (\ref{eqn:2.2}) :
+Considérons ensuite uniquement la source de tension alternative, le circuit est alors un inverseur classique (\ref{eqn:2.2}):
 \begin{equation}
 V_{out 1} = \frac{R_2}{R_1} V_{micro} = 68 V_{in}
 \label{eqn:2.2}
 \end{equation}
-On retrouve la tension en sortie du premier étage en sommant ces deux termes pour finalement obtenir (\ref{eqn:2.3}) :
+On retrouve la tension en sortie du premier étage en sommant ces deux termes pour finalement obtenir (\ref{eqn:2.3}):
 \begin{equation}
 V_{out 1} = \SI{1.65}{\volt} + 68 V_{micro}
 \label{eqn:2.3}
 \end{equation}
 
-La capacité $C_{2}$ placée entre nos deux étages d'amplification sert à supprimer la composante continue de la tension, la recentrant autour de \SI{0}{\volt}. On évite ainsi de faire saturer notre deuxième ampli-op. Pour le deuxième étage, les calculs sont exactement les mêmes que pour le premier, exception faite du gain du montage inverseur qui vaut 22. On obtient alors notre signal amplifié (\ref{eqn:2.4}) :
+La capacité $C_{2}$ placée entre nos deux étages d'amplification sert à supprimer la composante continue de la tension, la recentrant autour de \SI{0}{\volt}. On évite ainsi de faire saturer notre deuxième ampli-op. Pour le deuxième étage, les calculs sont exactement les mêmes que pour le premier, exception faite du gain du montage inverseur qui vaut 22. On obtient alors notre signal amplifié (\ref{eqn:2.4}):
 \begin{equation}
 V_{out final} = \SI{1.65}{\volt} + 1496 V_{micro}
 \label{eqn:2.4}
@@ -130,12 +130,12 @@ La figure \ref{fig:filtreAnalogique} montre le montage de notre filtre passe-bas
 \begin{figure}[htbp]
 \centering
 \includegraphics[width = 0.7\textwidth]{filtreAnalogFc.pdf}
-\caption{Sorti(bleu) du filtre de garde pour une entrée à la fréquence de coupure (rouge)}
+\caption{Sortie (bleu) du filtre de garde pour une entrée à la fréquence de coupure (rouge)}
 \label{fig:filtreAnalogFc}
 \end{figure}
 
 \subsection{Convertisseur analogique-numérique}
-Afin que notre microcontrôleur chargé de la communication puisse interpréter les consignes qui lui sont envoyées, il a bien sûr fallu convertir le signal reçu en signal numérique. Pour cela nous avons configuré l'ADC du microcontrôleur communication : c'est la fonction \ilcode{initADC()} qui contient le code correspondant. Ci-dessous nous listons quelques éléments importants de cette configuration :
+Afin que notre microcontrôleur chargé de la communication puisse interpréter les consignes qui lui sont envoyées, il a bien sûr fallu convertir le signal reçu en signal numérique. Pour cela nous avons configuré l'ADC du microcontrôleur communication: c'est la fonction \ilcode{initADC()} qui contient le code correspondant. Ci-dessous nous listons quelques éléments importants de cette configuration:
 \begin{itemize}
 \item L'ADC fonctionne en mode 12 bits, ce qui est son maximum
 \item La tension de référence pour la conversion est la même que la tension d'alimentation
@@ -143,14 +143,14 @@ Afin que notre microcontrôleur chargé de la communication puisse interpréter 
 \item L'ADC déclenche une conversion à chaque période du timer 3, dont la période est \SI{50}{\micro\second} ($f_s = \SI{20}{\kilo\hertz}$)
 \item Chaque conversion entraîne une interruption
 \end{itemize}
-Ce dernier point est particulièrement important, car c'est dans cette interruption que se déroule en fait tout le traitement numérique du signal audio. La trame sortant de l'ADC y est filtrée par deux filtres numériques, et les sorties passent ensuite chacune dans un détecteur de crête. Ceci fait office de démodulation; la trame est ensuite reconstituée par la fonction \ilcode{fskDetector}, qui est déjà fournie. Tout ceci est couvert dans la section suivante, après que la chaîne d'acquisition ait été validée.
+Ce dernier point est particulièrement important, car c'est dans cette interruption que se déroule en fait tout le traitement numérique du signal audio. La trame sortant de l'ADC y est filtrée par deux filtres numériques, et les sorties passent ensuite chacune dans un détecteur de crête. Ceci fait office de démodulation; la trame est ensuite reconstituée par la fonction \ilcode{fskDetector}, qui est déjà fournie. Tout ceci est couvert dans la section suivante, après que la chaîne d'acquisition a été validée.
 
 \subsection{Validation de la chaîne d'acquisition}
 
-Pour valider la chaîne d'acquisition dans son ensemble, un signal audio est généré à une fréquence connue, dans des conditions réelles\footnote{source audio éloignée de \SIrange{20}{30}{\centi\meter}, test dans le laboratoire qui est raisonnablement bruité}, et les 100 derniers échantillons sont gardés dans un array qui est ensuite exporté grâce au mode debug et représenté. Ces tests ont été effectués pour 900, 1100, 3000 ($f_c$) et 18900 (première fréquence repliée dans le signal utile) \si{\hertz} et ont tous été concluants (signal suffisamment préservé ou atténué).
+Pour valider la chaîne d'acquisition dans son ensemble, un signal audio est généré à une fréquence connue, dans des conditions réelles\footnote{Source audio éloignée de \SIrange{20}{30}{\centi\meter}, test dans le laboratoire qui est raisonnablement bruité.}, et les 100 derniers échantillons sont gardés dans un array qui est ensuite exporté grâce au mode debug et représenté. Ces tests ont été effectués pour 900, 1100, 3000 ($f_c$) et 18900 (première fréquence repliée dans le signal utile) \si{\hertz} et ont tous été concluants (signal suffisamment préservé ou atténué).
 
 \section{Traitement numérique du signal}
-Une fois notre signal numérisé, il faut encore en extraire la commande, s'il y en a bien une. Pour cela nous devons détecter la présence de nos deux fréquences de modulation : \SI{900}{\hertz} et \SI{1100}{\hertz}. En pratique, on filtre le signal de façon à ce que toutes les autres fréquences soient atténuées et on vient ensuite vérifier si l'amplitude du signal dépasse encore un certain seuil. Ces deux tâches incombent respectivement aux fonctions \ilcode{filterNewSample(unsigned int sample, int returnArray[2])} et \ilcode{peakDetect(int input[2])}.
+Une fois notre signal numérisé, il faut encore en extraire la commande, s'il y en a bien une. Pour cela nous devons détecter la présence de nos deux fréquences de modulation: \SI{900}{\hertz} et \SI{1100}{\hertz}. En pratique, on filtre le signal de façon à ce que toutes les autres fréquences soient atténuées et on vient ensuite vérifier si l'amplitude du signal dépasse encore un certain seuil. Ces deux tâches incombent respectivement aux fonctions \ilcode{filterNewSample(unsigned int sample, int returnArray[2])} et \ilcode{peakDetect(int input[2])}.
 
 \subsection{Filtres numériques passe-bande}
 Les filtres sont des filtres récursifs du second ordre. Ils sont décrits par l'équation récursive \ref{eqn:filtre_recursif} que l'on retrouve dans la fonction \ilcode{recurrence(long a1, long a2, long gain,int arrayX[3], long arrayY[3])} ou par le schéma bloc de la figure \ref{fig:filtre_bloc}.
