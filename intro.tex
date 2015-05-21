@@ -1,6 +1,37 @@
-Le but de ce projet intégré est de doter un robot d'un système de contrôle à distance. La base mécanique du robot est fournie, et celui-ci est déjà muni d'une première carte à microcontrôleur complète. Cette dernière permet d'une part de s'interfacer avec les moteurs et les encodeurs à partir du premier microcontrôleur, et d'autre part d'accéder à certaines pattes de celui-ci ainsi que des alimentations. Les autres blocs nécessaires doivent être conçus et implémentés par les étudiants et le code des microcontrôleurs doit être produit.
+Le but de ce projet est de contrôler un robot à distance. Pour cela, nous avons à notre disposition un robot composé de deux roues motrices. Notre rôle étant de mettre en place l’électronique ainsi que l’informatique nécessaire au contrôle précis de ces deux moteurs par le biais de microcontrôleurs pour permettre d’effectuer deux types de mouvements simples qui sont avancer et tourner. 
 
-Ce rapport décrit la démarche adoptée, ainsi que les solutions techniques adoptées pour mener à bien ce projet. Dans un premier temps le cahier des charges doit être analysé pour diviser l'objectif final en différent sous-problème bien définis.
+Une fois le contrôle mécanique mis en place, nous mettrons en place un moyen de donner des ordres au robot de manière audio. C’est-à-dire mettre en place une chaîne d’acquisition capable de recevoir un signal audio, le décoder et transmettre les informations correspondantes aux moteurs du robot. 
+
+Nous allons voir dans ce rapport les différentes étapes qui nous ont permis de mener à bien ce projet ainsi que les choix que nous avons fait pour répondre le plus précisément au cahier des charges détaillé ci-après. 
+
+
+(Le but de ce projet intégré est de doter un robot d'un système de contrôle à distance. La base mécanique du robot est fournie, et celui-ci est déjà muni d'une première carte à microcontrôleur complète. Cette dernière permet d'une part de s'interfacer avec les moteurs et les encodeurs à partir du premier microcontrôleur, et d'autre part d'accéder à certaines pattes de celui-ci ainsi que des alimentations. Les autres blocs nécessaires doivent être conçus et implémentés par les étudiants et le code des microcontrôleurs doit être produit.
+
+Ce rapport décrit la démarche adoptée, ainsi que les solutions techniques adoptées pour mener à bien ce projet. Dans un premier temps le cahier des charges doit être analysé pour diviser l'objectif final en différent sous-problème bien définis.)
+
+\newpage
 
 \section{Analyse du cahier des charges}
-Le robot doit
+
+\subsection{Audio}
+
+La première contrainte du robot est d’être capable de comprendre et d’interpréter un signal audio. Ce signal audio peut contenir quatre types d’ordres : « Avance », « Recule », « Tourne à gauche », « Tourne à droite ». Chacun de ces ordres est suivi d’un paramètre, soit d’un nombre de centimètres pour un mouvement en translation, soit un nombre de degrés pour les rotations. 
+
+Il est donc nécessaire de décoder un signal audio contenant toutes ces informations. Dans le chapitre 2, nous avons détaillé le fonctionnement de notre chaîne qui permet à partir d’un micro, de recevoir un signal numérique qui pourra être ensuite être interprété par la régulation des moteurs. 
+
+\subsection{Déplacement}
+
+Le robot doit donc être capable d’exécuter quatre types de mouvements. Cependant, on peut les regrouper en deux catégories : celle où les deux roues tournent dans des sens opposés, c’est-à-dire tourner à gauche ou à droite (les moteurs étant placées symétriquement par rapport au centre du robot, envoyer le même signal aux deux moteurs entraîne cela). Et celle où les deux roues tournent dans le même sens (signal opposé pour chacun des moteurs) pour avancer ou reculer.
+
+Le robot pourra donc être dans un des trois états différents suivants : en train d’avancer (ou reculer), en train de tourner, être arrêté. Le cahier des charges nous précise que le robot ne doit pas être capable de tourner et avancer en même temps.
+
+Le chapitre 3 nous détaille le fonctionnement de la chaîne de régulation qui nous permet de contrôler avec précision les moteurs de notre robot. En effet, les moteurs commandés en tension n’étant pas assez précis, ils sont alliés à des encodeurs de quadrature qui nous permettent de mettre en place une boucle de régulation. 
+
+Pour permettre une précision supplémentaire sur le contrôle des distances et angles parcourus par le robot, lors d’un déplacement, le robot passera par une phase d’accélération et finira par une phase de décélération pour éviter que le robot ne glisse au démarrage ou lors de son arrêt. 
+
+\subsection{Communication}
+
+Une fois ces deux blocs paramétrés, il est nécessaire de les relier. Etant donné qu’ils fonctionnent chacun avec un microcontrôleur différent, nous allons mettre en place une liaison UART qui va permettre de transmettre ces informations. 
+
+Il faut donc établir un moyen pour transmettre ces informations en minimisant ces erreurs et en s’assurant une vitesse de transfert suffisante entre les deux blocs.
+Toutes les étapes sont détaillées dans le chapitre 4. 
