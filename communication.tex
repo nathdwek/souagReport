@@ -114,25 +114,25 @@ La figure \ref{fig:filtreAnalogique} montre le montage de notre filtre passe-bas
 \begin{figure}[htbp]
 \centering
 \includegraphics[width = 0.7\textwidth]{filtreAnalog900Hz.pdf}
-\caption{Sortie de notre filtre (en bleu) pour une entrée de \SI{900}{\hertz} (en rouge)}
+\caption{Sortie (bleu) du filtre de garde pour une entrée à \SI{900}{\hertz} (rouge)}
 \label{fig:filtreAnalog900Hz}
 \end{figure}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width = 0.7\textwidth]{filtreAnalog1100Hz.pdf}
-\caption{Sortie de notre filtre (en bleu) pour une entrée de \SI{1100}{\hertz} (en rouge)}
+\caption{Sortie (bleu) du filtre de garde pour une entrée à \SI{1100}{\hertz} (rouge)}
 \label{fig:filtreAnalog1100Hz}
 \end{figure}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width = 0.7\textwidth]{filtreAnalog13kHz.pdf}
-\caption{Sortie de notre filtre (en bleu) pour une entrée de \SI{13}{\kilo\hertz} (en rouge)}
+\caption{Sortie (bleu) du filtre de garde pour une entrée à \SI{13}{\kilo\hertz} (rouge)}
 \label{fig:filtreAnalog13kHz}
 \end{figure}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width = 0.7\textwidth]{filtreAnalogFc.pdf}
-\caption{Sortie de notre filtre (en bleu) pour une entrée à la fréquence de coupure (en rouge)}
+\caption{Sorti(bleu) du filtre de garde pour une entrée à la fréquence de coupure (rouge)}
 \label{fig:filtreAnalogFc}
 \end{figure}
 
@@ -145,7 +145,11 @@ Afin que notre microcontrôleur chargé de la communication puisse interpréter 
 \item L'ADC déclenche une conversion à chaque période du timer 3, dont la période est \SI{50}{\micro\second} ($f_s = \SI{20}{\kilo\hertz}$)
 \item Chaque conversion entraîne une interruption
 \end{itemize}
-Ce dernier point est particulièrement important, car c'est dans cette interruption que se déroule en fait tout le traitement numérique du signal audio. La trame sortant de l'ADC y est filtrée par deux filtres numériques, et les sorties passent ensuite chacune dans un détecteur de crête. Ceci fait office de démodulation; la trame est ensuite reconstituée par la fonction \ilcode{fskDetector}, qui est déjà fournie. Tout ceci est couvert dans la section suivante.
+Ce dernier point est particulièrement important, car c'est dans cette interruption que se déroule en fait tout le traitement numérique du signal audio. La trame sortant de l'ADC y est filtrée par deux filtres numériques, et les sorties passent ensuite chacune dans un détecteur de crête. Ceci fait office de démodulation; la trame est ensuite reconstituée par la fonction \ilcode{fskDetector}, qui est déjà fournie. Tout ceci est couvert dans la section suivante, après que la chaîne d'acquisition ait été validée.
+
+\subsection{Validation de la chaîne d'acquisition}
+
+Pour valider la chaîne d'acquisition dans son ensemble, un signal audio est généré à une fréquence connue, dans des conditions réelles\footnote{source audio éloignée de \SIrange{20}{30}{\centi\meter}, test dans le laboratoire qui est raisonnablement bruité}, et les 100 derniers échantillons sont gardés dans un array qui est ensuite exporté grâce au mode debug et représenté. Ces tests ont été effectués pour 900, 1100, 3000 ($f_c$) et 18900 (première fréquence repliée dans le signal utile) \si{\hertz} et ont tous été concluants (signal suffisamment préservé ou atténué).
 
 \section{Traitement numérique du signal}
 Une fois notre signal numérisé, il faut encore en extraire la commande, s'il y en a bien une. Pour cela nous devons détecter la présence de nos deux fréquences de modulation : \SI{900}{\hertz} et \SI{1100}{\hertz}. En pratique, on filtre le signal de façon à ce que toutes les autres fréquences soient atténuées et on vient ensuite vérifier si l'amplitude du signal dépasse encore un certain seuil. Ces deux tâches incombent respectivement aux fonctions \ilcode{filterNewSample(unsigned int sample, int returnArray[2])} et \ilcode{peakDetect(int input[2])}.
@@ -173,3 +177,6 @@ Nous avons utilisé l'outil \ilcode{fdatool} de Matlab pour trouver les coeffici
 
 \subsection{Détecteurs de crête}
 Derrière les filtres numériques, le signal passe dans deux comparateurs chargés de détecter la présence de \SI{900}{\hertz} ou \SI{1100}{\hertz}. Pour cela, le microcontrôleur garde en mémoire un bloc du signal correspondant à une période de \SI{1/900}{\second} ou \SI{1/1100}{\second} et trouve le maximum sur ce bloc. Si ce maximum dépasse un certain seuil, la fréquence correspondante est considérée présente. Ces informations sont alors transmises à la fonction \ilcode{fskDetector(int detLow, int detHigh)} qui va mettre en forme la trame détectée.
+
+\subsection{Validation du bloc <<communication audio>>}
+Chronologiquement, ce bloc a été achevé en dernier, son fonctionnement a donc été prouvé par le fonctionnement du robot dans son ensemble et sa réponse aux ordre reçus. On observe cependant que la portée de la communication est extrêmement limitée (\SIrange{30}{40}{\centi\meter} maximum dans la direction la plus favorable), et dépend fortement de la direction\footnote{Cela est aussi dû à la forte directionnalité des enceintes de portable utilisées}.
