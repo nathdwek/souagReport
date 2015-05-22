@@ -7,6 +7,8 @@ Les moteurs sont commandé en PWM. Comme le montre la figure \ref{fig:SignalServ
   \item $\SI{3}{\milli\second} \leq T \leq \SI{20}{\milli\second}$
   \item $ \SI{1}{\milli\second} \leq T_{on} \leq \SI{2}{\milli\second}$
   \item $V_{mot}$ croît linéairement de $-V_{alim}$ à $+V_{alim}$ avec $T_{on}$
+  \item $v_{max} \simeq \SI{60}{\centi\meter\per\second}$, $a_{max} \simeq \SI{2}{\meter\per\second\squared}$
+  \item Point de fonctionnement suggéré: $v_0 = \SI{40}{\centi\meter\per\second}$, accélération limitée à \SI{50}{\centi\meter\per\second\squared}
 \end{itemize}
 \begin{figure}[htbp]
 \vspace{1.5em}
@@ -22,7 +24,7 @@ Le module output compare du microcontrôleur propulsion est donc utilisé pour g
   \item Choix du timer 2 comme valeur de comparaison
   \item Choix de $T_2 = \SI{10}{\milli\second}$, et démarrage du timer 2
 \end{itemize}
-Une fois $T_2$ fixé, il est plus facile de parler en terme de rapport cyclique qu'en longueur arbitraire. Puisque $T_2 = \SI{10}{\milli\second}$, on a directement:
+Une fois $T_2$ fixé, il est plus facile de parler en terme de rapport cyclique ($D$) qu'en longueur arbitraire. Puisque $T_2 = \SI{10}{\milli\second}$, on a directement:
 \begin{align*}
   D = 0.1 &\Rightarrow V_{mot} = -V_{alim}\\
   D = 0.15 &\Rightarrow V_{mot} = 0\\
@@ -50,19 +52,49 @@ La sortie des encodeurs est traitée par le module QEI du microcontrôleur propu
   \item \'Ecriture des routines d'overflow: \ilcode{xspins} est simplement incrémentée ou décrémentée en fonction de \ilcode{QEIxCON.UDPN}
 \end{itemize}
 
-\section{Implémentation du régulateur}
+\subsection{Validation des moteurs et encodeurs\label{sec:validMotor}}
+L'implémentation de \ilcode{wheels.c} est validée en fixant $D$ à une certaine valeur ($\neq 0.15$) et en vérifiant que le robot se déplace bien et que les mesures de position des roues sont correctes. Les tests sont concluants, les encodeurs sont entièrement satisfaisants, mais les moteurs semblent posséder une zone morte\footnote{Celle-ci se manifeste même lorsque les roues ne sont pas en contact avec le sol, et l'inertie du robot n'est donc pas le seul facteur.} non négligeable qui varie en plus entre les deux roues et avec le temps\footnote{Et probablement la charge de la batterie}. Les moteurs sont aussi généralement dissymétrique, c'est à dire qu'à un $D$ donné correspondent deux vitesses différentes. C'est bien sûr le rôle de la régulation de rejeter le mieux possible ces perturbations, comme nous allons le voir dans la section suivante.
 
-Une fois que notre robot est bien paramétré il doit être capable d'interpréter une consigne reçue et savoir quoi faire en fonction de la consigne. La partie concernant l'interprétation des ordres sera vue plus loin au chapitre 5.
-
-Le rôle de cette sous-partie est d'expliquer les différents éléments du code de regul.c ainsi que de decision.c.
-
-Notre robot peut suivre 3 états principaux :
-
+\section{Régulation}
+Avant d'aborder le c\oe{}ur du problème, c'est à dire l'implémentation du régulateur, le code qui permet de fermer la boucle et d'utiliser le régulateur est d'abord présenté.
+\subsection{Configuration minimale}
+Les commandes des moteurs sont mises à jour à intervalles réguliers par la régulation, un timer est donc nécessaire. La configuration de la régulation est opérée par \ilcode{configRegul}, qui effectue les actions suivantes:
 \begin{itemize}
-\item Straight
-Le robot doit avancer en ligne droite sur une longueur bien définie.
-\item Rotate
-Le robot doit tourner d'un certain angle sur lui-même, la spécificité étant de tourner d'un côté ou de l'autre en fonction de l'importance de l'angle.
-\item Stop
-Le robot ne se déplace pas et toutes les variables associées aux différentes consignes sont remises à zéro.
+  \item Choix de la période du timer 1 ($f_{regul} = f_{OC} = \SI{100}{\hertz}$) et démarrage de celui-ci
+  \item Initialisation de certaines variables d'état et des consignes
+  \item Activation de l'interruption du timer 1
 \end{itemize}
+
+C'est dans la routine d'interruption du timer 1 que toute le boucle fermée se déroule et que le microcontrôleur passe la plupart de son temps d'exécution. Durant une routine les actions suivantes sont effectuées:
+\begin{itemize}
+  \item Lecture des encodeurs à l'aide de \ilcode{readDistances}
+  \item Calcul des commandes des moteurs par le régulateur
+  \item Mise à jour des consignes
+  \item Détection de l'arrivée du robot à sa position visée
+\end{itemize}
+
+Nous pouvons maintenant enfin aborder la conception du régulateur, et la génération de ses consignes.
+
+\subsection{Conception et implémentation du régulateur}
+Il est suggéré de mettre en place deux régulateurs proportionnels indépendants agissant sur la position des roues. Deux régulateurs indépendant constitue la solution la plus simple, tandis qu'une régulation de position permet de bénéficier d'un intégrateur et donc d'une erreur statique théoriquement nulle. Le déplacement en ligne droite serait obtenu en donnant des consignes identiques aux deux roues, et la rotation en donnant des consignes opposées.
+
+Cette régulation est cependant fortement dégradée par les zones mortes variables dont nous avons parlé à la section \ref{sec:validMotor}. Lorsque le robot est muni d'un tel régulateur, ces zones mortes se manifestent par un changement de direction du robot avant de commencer le déplacement en ligne droite. En effet, puisqu'un moteur sort forcément de sa zone morte (bien) avant l'autre, le robot commence par tourner autour de sa roue immobile avant de commencer à avancer. Ceci est l'effet le plus visible, mais on constate aussi que le robot dévie de sa trajectoire. Tout ceci ne peut pas être compensé par la régulation suggérée, qui assure simplement que les deux roues ait parcouru la même distance, mais pas forcément dans le même temps. Il y a plusieurs solutions à ce problème.
+
+La première solution consiste à augmenter le gain de façon à ce que le temps d'établissement soit le plus court possible. En effet, c'est pendant cette durée que les effets de dissymétrie ont lieu (puisqu'après les positions sont par définition calées sur les consignes). Cependant, ceci fait apparaître des oscillations puis des instabilités et est limité par la saturation des moteurs. Même le gain le plus grand possible n'est pas suffisant pour compenser l'effet des dissymétries.
+
+La deuxième solution consiste à essayer de caractériser le mieux possible les zones mortes et les dissymétries entre les deux moteurs, pour par exemple introduire un offset dans les commandes des moteurs et utiliser des gains différents sur les deux régulateurs. Cette alternative est limitée par la précision des mesures et du modèle choisi, et par la dérive des valeurs avec le temps et d'autres facteurs.
+
+La troisième et dernière solution est beaucoup plus constructive et consiste à essayer de concevoir un régulateur qui, par design, est supposé être capable de rejeter les dissymétries entre les moteurs. Pour cela le régulateur opère non plus sur les positions séparées des deux roues, mais sur la distance parcourue et la rotation du robot. Le déplacement en ligne droite est obtenu en donnant une consigne non nulle de distance parcourue et un consigne nulle de rotation, et vice-versa pour la rotation, ce qui à l'avantage d'être aussi un peu plus naturel. Les deux régulateurs sont toujours proportionnels, et on conserve la propriété d'intégration qui assure une erreur statique nulle. C'est cette régulation-ci que nous avons finalement choisi.
+
+Pour calculer la distance totale parcourue, nous utilisons les relation suivantes:
+\begin{align*}
+  v_l &= \frac{v_{right}+v_{left}}{2}\\
+  \omega_z &= \frac{v_{right} - v_{left}}{l_{axis}}
+\end{align*}
+L'intégration n'est pas immédiate pour $\theta_z$, ce qui signifie qu'il faudra malheureusement évaluer $v_{right}$ et $v_{left}$:
+\begin{align*}
+  d_l(t) = \int_0^tv_l dt &= \frac{d_{right}+d_{left}}{2}\\
+  \omega_z &= \frac{v_{right} - v_{left}}{l_{axis}}
+\end{align*}
+
+
