@@ -11,9 +11,8 @@ Les moteurs sont commandé en PWM. Comme le montre la figure \ref{fig:SignalServ
   \item Point de fonctionnement suggéré: $v_0 = \SI{40}{\centi\meter\per\second}$, accélération limitée à \SI{50}{\centi\meter\per\second\squared}
 \end{itemize}
 \begin{figure}[htbp]
-\vspace{1.5em}
 \centering
-\includegraphics[width=0.85\textwidth,keepaspectratio]{SignalCommande.PNG}
+\includegraphics[width=\textwidth]{pwm.png}
 \caption{\label{fig:SignalServo}Signal de commande des servomoteurs. [Source: \'Etude du déplacement du robot]}
 \end{figure}
 
@@ -31,12 +30,6 @@ Une fois $T_2$ fixé, il est plus facile de parler en terme de rapport cyclique 
   D = 0.2 &\Rightarrow V_{mot} = +V_{alim}\\
 \end{align*}
 Le rapport cyclique est donc imposé par une simple instruction du type \ilcode{OCXRS = D*PR2}.
-
-\begin{figure}[tbph]
-\centering
-\includegraphics[width=0.85\textwidth,keepaspectratio]{BouclesdeRegul.PNG}
-\caption{\label{fig:BouclesdeRegul}Schéma de Régulation}
-\end{figure}
 
 \subsection{Encodeurs en quadrature}
 La rotation de chaque roue est mesurée par un encodeur en quadrature dont les paramètres importants sont les suivants:
