@@ -3,7 +3,7 @@ Le but de ce projet intégré est de doter un robot d'un système de contrôle �
 Ce rapport décrit la démarche, ainsi que les solutions techniques adoptées pour mener à bien ce projet. Dans un premier temps le cahier des charges doit être analysé pour diviser l'objectif final en différent sous-problèmes bien définis.
 
 \section{Analyse du cahier des charges}
-Les différentes fonctionnalités à développer, extraites du cahier des charges, sont les suivantes:
+Les différentes fonctionnalités à développer, tirées du cahier des charges, sont les suivantes:
 \begin{itemize}
   \item Le robot doit être capable de se déplacer en ligne droite d'une distance donnée et d'effectuer une rotation d'un angle donné
   \item Le robot doit être capable de recevoir et démoduler un signal audio FSK qui contient des instructions, à partir d'un microphone fourni
@@ -17,7 +17,7 @@ A partir de tout ceci, nous déduisons la liste des tâches à accomplir, qui co
   \item Développer une régulation de position et de position angulaire sur le microcontrôleur propulsion
   \item Dimensionner et implémenter une chaîne d'acquisition analogique pour numériser le signal audio à l'aide de l'ADC du microcontrôleur communication
   \item Développer un démodulateur numérique sur le microcontrôleur communication
-  \item Configurer et développer une communication UART entre les deux microcontrôleurs. Le niveau exact de traitement du signal avant d'être transféré au microcontrôleur propulsion doit encore être défini.
+  \item Configurer et développer une transmission UART entre les deux microcontrôleurs. Le niveau exact de traitement du signal avant d'être transféré au microcontrôleur propulsion doit encore être défini.
   \item Développer le bloc chargé d'interpréter les trames audio reçues et de fixer les paramètres de la régulation afin que celle-ci exécute la commande reçue
 \end{itemize}
 

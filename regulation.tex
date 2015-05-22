@@ -69,7 +69,8 @@ C'est dans la routine d'interruption du timer 1 que toute le boucle fermée se d
 Nous pouvons maintenant enfin aborder la conception du régulateur, et la génération de ses consignes.
 
 \subsection{Conception et implémentation du régulateur}
-Il est suggéré de mettre en place deux régulateurs proportionnels indépendants agissant sur la position des roues. Deux régulateurs indépendant constitue la solution la plus simple, tandis qu'une régulation de position permet de bénéficier d'un intégrateur et donc d'une erreur statique théoriquement nulle. Le déplacement en ligne droite serait obtenu en donnant des consignes identiques aux deux roues, et la rotation en donnant des consignes opposées.
+\subsubsection{Choix du schéma de régulation MIMO}
+Il est suggéré de mettre en place deux régulateurs proportionnels indépendants agissant sur la position des roues. Deux régulateurs indépendant constitue la solution la plus simple, tandis qu'une régulation de position permet de bénéficier d'un intégrateur et donc d'une erreur statique théoriquement nulle sur la vitesse. Le déplacement en ligne droite serait obtenu en donnant des consignes identiques aux deux roues, et la rotation en donnant des consignes opposées.
 
 Cette régulation est cependant fortement dégradée par les zones mortes variables dont nous avons parlé à la section \ref{sec:validMotor}. Lorsque le robot est muni d'un tel régulateur, ces zones mortes se manifestent par un changement de direction du robot avant de commencer le déplacement en ligne droite. En effet, puisqu'un moteur sort forcément de sa zone morte (bien) avant l'autre, le robot commence par tourner autour de sa roue immobile avant de commencer à avancer. Ceci est l'effet le plus visible, mais on constate aussi que le robot dévie de sa trajectoire. Tout ceci ne peut pas être compensé par la régulation suggérée, qui assure simplement que les deux roues ait parcouru la même distance, mais pas forcément dans le même temps. Il y a plusieurs solutions à ce problème.
 
@@ -77,15 +78,35 @@ La première solution consiste à augmenter le gain de façon à ce que le temps
 
 La deuxième solution consiste à essayer de caractériser le mieux possible les zones mortes et les dissymétries entre les deux moteurs, pour par exemple introduire un offset dans les commandes des moteurs et utiliser des gains différents sur les deux régulateurs. Cette alternative est limitée par la précision des mesures et du modèle choisi, et par la dérive des valeurs avec le temps et d'autres facteurs.
 
-La troisième et dernière solution est beaucoup plus constructive et consiste à essayer de concevoir un régulateur qui, par design, est supposé être capable de rejeter les dissymétries entre les moteurs. Pour cela le régulateur opère non plus sur les positions séparées des deux roues, mais sur la distance parcourue et la rotation du robot. Le déplacement en ligne droite est obtenu en donnant une consigne non nulle de distance parcourue et un consigne nulle de rotation, et vice-versa pour la rotation, ce qui à l'avantage d'être aussi un peu plus naturel. Les deux régulateurs sont toujours proportionnels, et on conserve la propriété d'intégration qui assure une erreur statique nulle. C'est cette régulation-ci que nous avons finalement choisi.
+La troisième et dernière solution est beaucoup plus constructive fondamentale et consiste à essayer de concevoir un régulateur qui, par design, est supposé être capable de rejeter les dissymétries entre les moteurs. Pour cela le régulateur opère non plus sur les positions séparées des deux roues, mais sur la distance parcourue et la rotation du robot. Le déplacement en ligne droite est obtenu en donnant une consigne non nulle de distance parcourue et un consigne nulle de rotation, et vice-versa pour la rotation, ce qui à l'avantage d'être aussi un peu plus naturel. Les deux régulateurs sont toujours proportionnels, et on conserve la propriété d'intégration qui assure une erreur statique nulle. C'est cette régulation-ci que nous avons finalement choisi.
 
-Pour calculer la distance totale parcourue, nous utilisons les relation suivantes:
+\subsubsection{Implémentation du régulateur choisi}
+Pour calculer la distance totale parcourue, nous utilisons les relations suivantes:
 \begin{align*}
   v_l &= \frac{v_{right}+v_{left}}{2}\\
   \omega_z &= \frac{v_{right} - v_{left}}{l_{axis}}
 \end{align*}
-L'intégration n'est pas immédiate pour $\theta_z$, ce qui signifie qu'il faudra malheureusement évaluer $v_{right}$ et $v_{left}$:
+L'intégration est immédiate, $d_l$ et $\theta_z$ s'expriment simplement à partir des lectures encodeurs:
 \begin{align*}
   d_l(t) = \int_0^tv_l dt &= \frac{d_{right}+d_{left}}{2}\\
-  \omega_z &= \frac{v_{right} - v_{left}}{l_{axis}}
+  \theta_z(t) = \int_0^t \omega_z dt &= \frac{d_{right} - d_{left}}{l_{axis}}
 \end{align*}
+
+L'implémentation du régulateur proportionnel est ensuite extrêmement simple. Les gains sont trouvés expérimentalement. Ils sont différents selon que le robot soit à l'arrêt, en rotation ou en déplacement en ligne droite. En effet, selon le mouvement en cours, un des $k_p$ sert au suivi de consigne, tandis que l'autre sert à la réjection des perturbations, et est donc logiquement plus important.
+
+\subsubsection{Génération des consignes}
+Les consignes de distance parcourue et de rotation sont générées par intégration à partir d'un profil trapézoïdal de vitesse, comme le suggère la figure \ref{fig:vConsigne}, extraite de l'étude du déplacement reçue.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width = 0.7\textwidth]{vConsigne.png}
+  \caption{Profil de vitesse trapézoïdal de vitesse.[Source: \'Etude du déplacement du robot]\label{fig:vConsigne}}
+\end{figure}
+La fonction \ilcode{updateConsignes} génère les consignes. Il s'agit simplement d'une double intégration de l'accélération (angulaire) puis de la vitesse (angulaire), avec en plus une mise à zéro de l'accélération lorsque la vitesse dépasse la vitesse de croisière.
+
+\subsubsection{Détection de l'arrivée}
+La fonction \ilcode{checkTerminalCondition} est responsable de donner une valeur d'accélération (angulaire) opposée à la vitesse de déplacement (angulaire) lorsque l'objectif est distant de la distance de décélération, et d'ensuite annuler la vitesse (angulaire) et l'accélération (angulaire) lorsque la vitesse change de signe. Le choix de la distance de décélération est un peu plus détaillé dans la section \ref{sec:stateVars}.
+
+\section{Validation du bloc déplacement}
+Chronologiquement, nous avons implémenté les fonctions \ilcode{straight(char distance)} et \ilcode{rotate(char angle, char way)} de \ilcode{decision.c}, présentées dans le chapitre \ref{chap:decision}, immédiatement après la régulation, notamment pour la tester. Il suffit donc d'appeler une de ces fonctions dans le main pour tester la régulation. Dans l'ensemble, celle-ci est satisfaisante, et permet d'effectuer tous les déplacement demandés et l'arrêt immédiat. On remarque cependant que la précision relatives sur des courtes distances et sur les rotations n'est pas très bonne. Ceci est dû à la précision limitée des encodeur\footnote{$~\frac{1}{360}$ de tour $ = \SI{0.09}{\centi\meter}$, donne un borne absolue sur la précision, mais celle-ci n'est jamais atteinte} mais surtout par les moteurs et leur zone morte, auquel s'ajoute le fait que la régulation garantit théoriquement une erreur statique nulle sur la vitesse, mais pas sur la position.
+
+Nous disposons maintenant d'un bloc déplacement complet et fonctionnel, nous allons maintenant repartir <<par l'autre côté>> pour aborder la réception des instructions, en commençant donc par la chaîne d'acquisition audio.
