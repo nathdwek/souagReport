@@ -1,24 +1,25 @@
-Le but de ce projet intégré est de doter un robot d'un système de contrôle à distance. La base mécanique du robot est fournie, et celui-ci est déjà muni d'une première carte à microcontrôleur complète. Cette dernière permet d'une part de s'interfacer avec les moteurs et les encodeurs à partir du premier microcontrôleur, et d'autre part d'accéder à certaines pattes de celui-ci ainsi que des alimentations. Les autres blocs nécessaires doivent être conçus et implémentés par les étudiants et le code des microcontrôleurs doit être produit.
+Le but de ce projet intégré est de doter un robot d'un système de contrôle à distance, basé sur une transmission sonore. La base mécanique du robot est fournie, et celui-ci est déjà muni d'une première carte à microcontrôleur complète. Cette dernière permet d'une part de s'interfacer avec les moteurs et les encodeurs à partir du premier microcontrôleur, et d'autre part d'accéder à certaines pattes de celui-ci ainsi que des alimentations. Les autres blocs nécessaires doivent être conçus et implémentés par les étudiants et le code des microcontrôleurs doit être produit.
 
 Ce rapport décrit la démarche, ainsi que les solutions techniques adoptées pour mener à bien ce projet. Dans un premier temps le cahier des charges doit être analysé pour diviser l'objectif final en différent sous-problèmes bien définis.
 
 \section{Analyse du cahier des charges}
 Les différentes fonctionnalités à développer, tirées du cahier des charges, sont les suivantes:
 \begin{itemize}
-  \item Le robot doit être capable de se déplacer en ligne droite d'une distance donnée et d'effectuer une rotation d'un angle donné
-  \item Le robot doit être capable de recevoir et démoduler un signal audio FSK qui contient des instructions, à partir d'un microphone fourni
-  \item Le robot doit être capable d’interpréter et d'exécuter les instructions (déplacement en ligne droite et rotation) reçues
+  \item Le robot doit être capable de se déplacer en ligne droite d'une distance donnée et d'effectuer une rotation d'un angle donné.
+  \item Le robot doit être capable de recevoir et démoduler un signal audio FSK qui contient des instructions, à partir d'un microphone fourni.
+  \item Le robot doit être capable d’interpréter et d'exécuter les instructions (déplacement en ligne droite et rotation) reçues.
 \end{itemize}
 
-Puisque le traitement numérique du signal audio est relativement intensif en calcul, il est suggéré d'utiliser un microcontrôleur supplémentaire pour effectuer celui-ci. Ceci permet d'illustrer une communication UART qui sera utilisée pour transmettre les instructions entre les deux microcontrôleurs. Dans la suite, nous appellerons le microcontrôleur permettant de s'interfacer avec les roues le microcontrôleur <<propulsion>> et l'autre le microcontrôleur <<communication>>.
+Puisque le traitement numérique du signal audio est relativement intensif en calcul, il est suggéré d'utiliser un microcontrôleur supplémentaire pour effectuer celui-ci. Ceci permettra aussi d'illustrer une communication UART qui sera utilisée pour transmettre les instructions entre les deux microcontrôleurs. Dans la suite, nous appellerons le microcontrôleur permettant de s'interfacer avec les roues le microcontrôleur <<propulsion>> et l'autre le microcontrôleur <<communication>>.
 
-A partir de tout ceci, nous déduisons la liste des tâches à accomplir, qui correspondent chacune à un bloc bien délimité du robot, suivantes:
+A partir de tout ceci, nous déduisons la liste des tâches à accomplir suivantes, correspondant chacune à un bloc bien délimité du robot:
 \begin{itemize}
-  \item Développer une régulation de position et de position angulaire sur le microcontrôleur propulsion
-  \item Dimensionner et implémenter une chaîne d'acquisition analogique pour numériser le signal audio à l'aide de l'ADC du microcontrôleur communication
-  \item Développer un démodulateur numérique sur le microcontrôleur communication
+  \item Développer une régulation de position et de position angulaire sur le microcontrôleur propulsion;
+  \item Dimensionner et implémenter une chaîne d'acquisition pour conditionner et numériser le signal audio à l'aide de l'ADC du microcontrôleur communication;
+  \item Développer un démodulateur numérique sur le microcontrôleur communication;
   \item Configurer et développer une transmission UART entre les deux microcontrôleurs. Le niveau exact de traitement du signal avant d'être transféré au microcontrôleur propulsion doit encore être défini.
-  \item Développer le bloc chargé d'interpréter les trames audio reçues et de fixer les paramètres de la régulation afin que celle-ci exécute la commande reçue
+  \item Développer le bloc chargé d'interpréter les trames audio reçues et de fixer les paramètres de la régulation afin que celle-ci exécute la commande reçue;
 \end{itemize}
 
-C'est dans cet ordre que ces blocs sont abordés dans ce rapport. Le chapitre \ref{chap:regul} couvre la configuration des moteurs et encodeurs ainsi que le développement du régulateur et de ses consignes. Le chapitre \ref{chap:audio} présente la chaîne d'acquisition et le traitement numérique du signal audio. Le chapitre \ref{chap:uart} couvre la configuration des modules UART et le développement des émetteurs et récepteurs. Enfin, le chapitre \ref{chap:decision} fait le lien entre la régulation et la réception des instructions: il présente comment les paramètres utilisés pour générés les consignes de la régulations sont modifiés par une commande. Dans le chapitre \ref{chap:conclusion}, nous conclurons en présentant l'aboutissement du projet.
+\section{Structure de ce rapport}
+C'est dans cet ordre que ces blocs sont abordés dans ce rapport. Le chapitre \ref{chap:regul} couvre la configuration des moteurs et encodeurs ainsi que le développement du régulateur et de ses consignes. Le chapitre \ref{chap:audio} présente la chaîne d'acquisition et le traitement numérique du signal audio. Le chapitre \ref{chap:uart} couvre la configuration des modules UART et le développement des émetteurs et récepteurs. Enfin, le chapitre \ref{chap:decision} fait le lien entre la régulation et la réception des instructions: il présente la manière dont les paramètres utilisés pour générer les consignes de la régulations sont modifiés par une commande reçue. Dans le chapitre \ref{chap:conclusion}, nous conclurons en présentant l'aboutissement du projet.

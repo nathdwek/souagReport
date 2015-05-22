@@ -3,12 +3,6 @@
 \usepackage{lmodern}
 \usepackage{microtype}
 
-\usepackage{fontspec}
-\setmonofont[
-  AutoFakeSlant,
-  BoldItalicFeatures={FakeSlant},
-]{Inconsolata}
-
 \usepackage{float}
 \usepackage{graphicx}
 \usepackage[hypcap]{caption}
@@ -20,7 +14,15 @@
 \sisetup{range-phrase={ -- }}
 \sisetup{range-units=single}
 \usepackage{amsmath}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
 \usepackage{amssymb}
+
+\usepackage{mathspec}
+\setmonofont[
+  AutoFakeSlant,
+  BoldItalicFeatures={FakeSlant},
+]{Inconsolata}
+\setmathtt{Inconsolata}
 
 \newcommand{\ilcode}{\texttt}
 %no code yet
