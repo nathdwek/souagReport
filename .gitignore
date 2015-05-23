@@ -15,7 +15,8 @@
 #meld
 *.orig
 
-#emacs
+#emacs-vim
 *~
 \#*\#
 auto/
+*.swp

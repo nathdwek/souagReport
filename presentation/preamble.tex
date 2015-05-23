@@ -1,0 +1,31 @@
+\usepackage{fixltx2e}
+\usepackage{babel}
+\usepackage{microtype}
+
+\usetheme{default}
+\usecolortheme{whale}
+
+%\usepackage{pgfpages}
+%\setbeameroption{show notes on second screen}
+%\setbeamertemplate{note page}[default]
+\beamertemplatenavigationsymbolsempty
+%\setbeamerfont{page number in head/foot}{size=\large}
+\setbeamertemplate{footline}[frame number]
+
+\usepackage{siunitx}
+\sisetup{range-phrase=--}
+\sisetup{range-units=single}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{mathspec}
+\setmonofont[
+  AutoFakeSlant,
+  BoldItalicFeatures={FakeSlant},
+]{Inconsolata}
+\setmathtt{Inconsolata}
+\newcommand{\ilcode}{\texttt}
+
+\usepackage{pgfpages}
+
+\graphicspath{ {../pics/} }
