@@ -11,6 +11,7 @@
 
 #kile/kate
 *.backup
+*.kate-swp
 
 #meld
 *.orig
