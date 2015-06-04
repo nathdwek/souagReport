@@ -1,12 +1,16 @@
-\begin{frame}{Chaîne d'acquisition}
-  \framesubtitle{Microphone}
-  \centering
-  \includegraphics[width = 0.9\textwidth]{polarisation_micro.pdf}
+\begin{frame}
+  \tableofcontents[currentsection]
 \end{frame}
 
 \begin{frame}{Chaîne d'acquisition}
   \framesubtitle{Amplification et polarisation du signal audio}
+  \begin{columns}[c]
+  \column{.25\textwidth}
+  \vspace{4.5cm}
+  \includegraphics[width = \textwidth]{polarisation_micro.pdf}
+  \column{.9\textwidth}
   \includegraphics[width = \textwidth]{etage_amplificateur.png}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Chaîne d'acquisition}
@@ -26,5 +30,21 @@
   \includegraphics[width = .35\textwidth]{filtre_bloc.png}
   \end{center}
 \end{frame}
+
+\begin{frame}{Traitement numérique du signal}
+  \framesubtitle{Détection de crête -- intégration avec \ilcode{fskDetector}}
+  \begin{itemize}
+    \item Crêté détectée si le maximum sur les derniers échantillons correspondant à une période de signal est supérieur à un niveau minimal
+    \item Routine d'échantillonnage:
+    \begin{itemize}
+      \item Filtrage $\rightarrow$ deux échantillon filtrés
+      \item Détection de crête $\rightarrow$ deux booléens
+      \item Détection de trame FSK $\rightarrow$ trame reconstituée ou rien
+    \end{itemize}
+    \textbf{\large $\Rightarrow$ Attention au temps d'exécution!}
+    \item Si une trame est reconstituée, elle est ensuite passée au bloc UART
+  \end{itemize}
+\end{frame}
+
 
 
