@@ -1,0 +1,14 @@
+\frame{\tableofcontents[currentsection]}
+
+\begin{frame}{Interprétation des ordres}
+  \begin{itemize}
+    \item Lien entre le bloc réception de l'UART et la régulation
+    \item Lors de la réception d'une trame
+    \begin{itemize}
+      \item Interprétation de l'ordre et du paramètre
+      \item Détermination de l'accélération initiale, la distance totale et la distance avant décélération à partir de l'ordre reçu afin de générer une nouvelle consigne
+      \item Arrêt du robot et reset de ses variables
+      \item Utilisation des paramètres déterminés pour commencer à générer la consigne
+    \end{itemize}
+  \end{itemize}
+\end{frame}
